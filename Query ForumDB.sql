@@ -88,7 +88,6 @@ BEGIN
 	DECLARE @saldo INT
 	DECLARE @quant INT
 	
-
 	SELECT @numcompra = id, @id_usuario = id_usuario, @item = id_item FROM inserted
 	SELECT @preco = preco FROM Produto WHERE id = @item
 	SELECT @saldo = saldo FROM Usuario WHERE id = @id_usuario
