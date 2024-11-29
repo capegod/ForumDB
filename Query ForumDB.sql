@@ -1,4 +1,4 @@
-/* CRIA«√O DO BANCO + SELECIONAR PARA USO*/
+/* CRIA√á√ÉO DO BANCO + SELECIONAR PARA USO*/
 
 CREATE DATABASE forumDB;
 GO
@@ -6,7 +6,7 @@ GO
 USE forumDB;
 GO
 
-/*INICIO DDL - CRIA«√O DAS TABELAS */
+/*INICIO DDL - CRIA√á√ÉO DAS TABELAS */
 
 -- Tabela de estados
 CREATE TABLE Estado(
@@ -16,39 +16,39 @@ CREATE TABLE Estado(
 );
 GO
 
--- Tabela de Usu·rios
+-- Tabela de Usu√°rios
 CREATE TABLE Usuario(
-    id INT IDENTITY(1,1) PRIMARY KEY,
+    	id INT IDENTITY(1,1) PRIMARY KEY,
 	nome VARCHAR(100) UNIQUE NOT NULL,
-    nasc DATE NOT NULL
+  	nasc DATE NOT NULL
 	CHECK(DATEDIFF(year, nasc, CONVERT(DATE, GETDATE())) >= 16),
 	email VARCHAR(255) UNIQUE NOT NULL,
-    senha CHAR(60) NOT NULL,
+    	senha CHAR(60) NOT NULL,
 	saldo INT DEFAULT 0,
 	pontuacao INT DEFAULT 0,
 	id_estado INT FOREIGN KEY REFERENCES estado(id)
 );
 GO
 
--- Tabela de TÛpicos
+-- Tabela de T√≥picos
 CREATE TABLE Topico(
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    titulo VARCHAR(100) NOT NULL,
-    descricao VARCHAR(5000) NOT NULL,
-    data_criacao SMALLDATETIME DEFAULT SYSDATETIME(),
-    id_usuario INT FOREIGN KEY REFERENCES Usuario(id),
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	titulo VARCHAR(100) NOT NULL,
+	descricao VARCHAR(5000) NOT NULL,
+	data_criacao SMALLDATETIME DEFAULT SYSDATETIME(),
+	id_usuario INT FOREIGN KEY REFERENCES Usuario(id),
 	stat BIT NOT NULL DEFAULT 0
 );
 GO
 
 -- Tabela de Respostas
 CREATE TABLE Resposta(
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    conteudo VARCHAR(5000) NOT NULL,
-    data_resposta SMALLDATETIME DEFAULT SYSDATETIME(),
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	conteudo VARCHAR(5000) NOT NULL,
+	data_resposta SMALLDATETIME DEFAULT SYSDATETIME(),
 	resp BIT NOT NULL DEFAULT 0,
-    id_usuario INT FOREIGN KEY REFERENCES Usuario(id),
-    id_topico INT FOREIGN KEY REFERENCES Topico(id),
+	id_usuario INT FOREIGN KEY REFERENCES Usuario(id),
+	id_topico INT FOREIGN KEY REFERENCES Topico(id),
 );
 GO
 
@@ -73,9 +73,9 @@ CREATE TABLE Compra(
 );
 GO
 
-/* CRIA«√O DOS GATILHOS DO BANCO */
+/* CRIA√á√ÉO DOS GATILHOS DO BANCO */
 
--- CRIA«√O DE TRIGGER PARA EFETUAR compra
+-- CRIA√á√ÉO DE TRIGGER PARA EFETUAR compra
 CREATE TRIGGER efetuar_compra
 ON compra
 FOR INSERT
@@ -95,37 +95,27 @@ BEGIN
 	SELECT @quant = quant FROM Produto WHERE id = @item
 
 	IF @saldo >= @preco AND @quant = 0 
-	
-	BEGIN
-	UPDATE compra SET stat = 'FALHOU! N„o h· mais itens na loja.' WHERE id = @numcompra
-	END
-	
-	ELSE 
-		IF @saldo < @preco AND (@quant > 0 OR @quant IS NULL)
-	
 		BEGIN
-		UPDATE compra SET stat = 'FALHOU! O usu·rio n„o tem pontos suficientes.' WHERE id = @numcompra
+		UPDATE compra SET stat = 'FALHOU! N√£o h√° mais itens na loja.' WHERE id = @numcompra
 		END
-	
-		ELSE 
-			IF
-			@saldo >= @preco AND (@quant > 0 OR @quant IS NULL)
-	
+	ELSE IF @saldo < @preco AND (@quant > 0 OR @quant IS NULL)
+		BEGIN
+		UPDATE compra SET stat = 'FALHOU! O usu√°rio n√£o tem pontos suficientes.' WHERE id = @numcompra
+		END
+	ELSE IF @saldo >= @preco AND (@quant > 0 OR @quant IS NULL)
+		BEGIN
+		UPDATE Usuario SET saldo = saldo - @preco WHERE id = @id_usuario
+		UPDATE compra SET stat = 'SUCESSO! Compra efetuada.' WHERE id = @numcompra
+			
+		IF ISNUMERIC(@quant) = 1
 			BEGIN
-			UPDATE Usuario SET saldo = saldo - @preco WHERE id = @id_usuario
-			UPDATE compra SET stat = 'SUCESSO! Compra efetuada.' WHERE id = @numcompra
-			
-				IF ISNUMERIC(@quant) = 1
-			
-				BEGIN
-				UPDATE Produto SET quant = quant - 1 WHERE id = @item
-				END
-
-			END	
+			UPDATE Produto SET quant = quant - 1 WHERE id = @item
+			END
+		END	
 END
 GO
 
--- CriaÁ„o do trigger para atualizaÁ„o dos pontos 
+-- Cria√ß√£o do trigger para atualiza√ß√£o dos pontos 
 CREATE TRIGGER update_pontos_topico
 ON Resposta 
 AFTER UPDATE
@@ -147,20 +137,20 @@ BEGIN
 END
 GO
 
-/* CRIA«√O DOS PROCEDURES DO BANCO */
+/* CRIA√á√ÉO DOS PROCEDURES DO BANCO */
 
--- CriaÁ„o do procedure para ver histÛrico de compra de um usu·rio
--- COMANDO: EXEC Historico @user = id de um usu·rio
+-- Cria√ß√£o do procedure para ver hist√≥rico de compra de um usu√°rio
+-- COMANDO: EXEC Historico @user = id de um usu√°rio
 CREATE PROCEDURE Historico @user INT
 AS
-SELECT compra.id AS 'N∫ pedido', Produto.nome_item AS 'Nome do item', compra.stat AS 'Status do Pedido', compra.hora AS 'Data e Hora'
+SELECT compra.id AS 'N¬∫ pedido', Produto.nome_item AS 'Nome do item', compra.stat AS 'Status do Pedido', compra.hora AS 'Data e Hora'
 FROM compra
 INNER JOIN Produto ON compra.id_item = Produto.id
 WHERE compra.id_usuario = @user;
 GO
 
--- CriaÁ„o do procedure para sinalizar 
--- uma resposta de um tÛpico como definitiva
+-- Cria√ß√£o do procedure para sinalizar 
+-- uma resposta de um t√≥pico como definitiva
 -- COMANDO: EXEC responde @num = id de uma resposta
 CREATE PROCEDURE responde @num INT
 AS
@@ -169,7 +159,7 @@ SET resp = 1
 WHERE id = @num;
 GO
 
--- CriaÁ„o do procedure para adicionar mais itens de um item j· existente
+-- Cria√ß√£o do procedure para adicionar mais itens de um item j√° existente
 -- COMANDO: EXEC adicionar_itens @cod_item = id do item, 
 -- @quant = quantidade a ser adicionada
 CREATE PROCEDURE adicionar_itens @cod_item INT, @quant INT
@@ -179,8 +169,8 @@ SET quant = quant + @quant
 WHERE id = @cod_item;
 GO
 
--- CriaÁ„o do procedure que faz as compra de um item por um usu·rio
--- COMANDO: EXEC fazer_compra @id_item = id do item desejado, @id_usuario = id do usu·rio comprador
+-- Cria√ß√£o do procedure que faz as compra de um item por um usu√°rio
+-- COMANDO: EXEC fazer_compra @id_item = id do item desejado, @id_usuario = id do usu√°rio comprador
 CREATE PROCEDURE fazer_compra @id_item INT, @id_usuario INT
 AS
 INSERT INTO compra(id_item, id_usuario)
@@ -195,34 +185,34 @@ INSERT INTO estado(sigla, nome)
 VALUES
 	('AC', 'Acre'),
 	('AL', 'Alagoas'),
-	('AP', 'Amap·'),
+	('AP', 'Amap√°'),
 	('AM', 'Amazonas'),
 	('BA', 'Bahia'),
-	('CE', 'Cear·'),
+	('CE', 'Cear√°'),
 	('DF', 'Distrito Federal'),
-	('ES', 'EspÌrito Santo'),
-	('GO', 'Goi·s'),
-	('MA', 'Maranh„o'),
+	('ES', 'Esp√≠rito Santo'),
+	('GO', 'Goi√°s'),
+	('MA', 'Maranh√£o'),
 	('MT', 'Mato Grosso'),
 	('MS', 'Mato Grosso do Sul'),
 	('MG', 'Minas Gerais'),
-	('PA', 'Par·'),
-	('PB', 'ParaÌba'),
-	('PR', 'Paran·'),
+	('PA', 'Par√°'),
+	('PB', 'Para√≠ba'),
+	('PR', 'Paran√°'),
 	('PE', 'Pernambuco'),
-	('PI', 'PiauÌ'),
+	('PI', 'Piau√≠'),
 	('RJ', 'Rio de Janeiro'),
 	('RN', 'Rio Grande do Norte'),
 	('RS', 'Rio Grande do Sul'),
-	('RO', 'RondÙnia'),
+	('RO', 'Rond√¥nia'),
 	('RR', 'Roraima'),
 	('SC', 'Santa Catarina'),
-	('SP', 'S„o Paulo'),
+	('SP', 'S√£o Paulo'),
 	('SE', 'Sergipe'),
 	('TO', 'Tocantins');
 GO
 
--- AMOSTRA DE USU¡RIOS
+-- AMOSTRA DE USU√ÅRIOS
 INSERT INTO Usuario(nome, nasc, email, senha, id_estado)
 VALUES 
 	('Amanda', '1996-07-19', 'amanda@gmail.com', '$2a$12$okBbHPzatD3LfsR9.seTlucsGmRbK2aY5YPspFNt/eZ3HvLQra6xy', 5),
@@ -235,10 +225,10 @@ VALUES
 	('Sheila', '2008-12-01', 'Sheila@gmail.com', '$2a$12$76PzYQY.xN4SpJT4CgWQRuQhdbYGSxQwH.jGvDfljt52n.ZeDfe5G', 13);
 GO
 
--- AMOSTRA DE T”PICO
+-- AMOSTRA DE T√ìPICO
 INSERT INTO Topico(titulo, descricao, id_usuario)
 VALUES
-	('D˙vida sobre regra de trÍs simples', 'Como faÁo para resolver uma regra de trÍs simples?', 3);
+	('D√∫vida sobre regra de tr√™s simples', 'Como fa√ßo para resolver uma regra de tr√™s simples?', 3);
 GO
 
 -- AMOSTRA DE RESPOSTA
@@ -250,18 +240,18 @@ GO
 -- AMOSTRA DE ITENS NA LOJA
 INSERT INTO	Produto(nome_item, descricao, preco, quant, marca)
 VALUES 
-	('Wallpaper', 'Kit de papeis de parede em alta resoluÁ„o', 5, NULL, NULL),
+	('Wallpaper', 'Kit de papeis de parede em alta resolu√ß√£o', 5, NULL, NULL),
 	('Sticker', 'Sticker digital para perfil', 10, NULL, NULL),
 	('Cupom de desconto 5%', 'Cupom de desconto em lojas parceiras', 50, NULL, NULL),
 	('E-book de Receitas', 'Livro digital com 50 receitas exclusivas', 100, NULL, 'Editora Fernanda'),
-	('Assinatura Premium Spotify - 1 mÍs', 'Assinatura de 1 mÍs para serviÁo de streaming de m˙sicas Spotify', 150, NULL, 'Spotify'),
+	('Assinatura Premium Spotify - 1 m√™s', 'Assinatura de 1 m√™s para servi√ßo de streaming de m√∫sicas Spotify', 150, NULL, 'Spotify'),
 	('Gift Card Steam - R$50', 'Gift card de R$50 para compra na loja digital Steam', 200, NULL, 'Steam'),
 	('Fone de Ouvido Bluetooth', 'Fone de ouvido sem fio com qualidade de som superior', 250, 100, 'Xiaomi'),
-	('Teclado Mec‚nico Gamer', 'Teclado mec‚nico RGB para jogos', 500, 100, 'Redragon'),
-	('Console de Videogame', 'Console de videogame de ˙ltima geraÁ„o', 1000, 1, 'XBOX');
+	('Teclado Mec√¢nico Gamer', 'Teclado mec√¢nico RGB para jogos', 500, 100, 'Redragon'),
+	('Console de Videogame', 'Console de videogame de √∫ltima gera√ß√£o', 1000, 1, 'XBOX');
 GO
 
--- AMOSTRA DE USU¡RIOS COM PONTOS
+-- AMOSTRA DE USU√ÅRIOS COM PONTOS
 INSERT INTO Usuario(nome, nasc, email, senha, saldo, pontuacao, id_estado)
 VALUES 
 	('Rafael', '1980-03-20', 'Rafael@gmail.com', '$2a$12$jwrhSMjq/eVWb8bzxEoVH.zHs22a8sGpw/ZDQdEhyubnR.mfHeApy', 50, 50, 10),
@@ -271,7 +261,7 @@ GO
 
 /* INICIO DOS TESTES COM PROCEDURES */
 
--- TESTE PARA RETORNO DE N√O TEM PONTOS compra
+-- TESTE PARA RETORNO DE N√ÉO TEM PONTOS compra
 EXEC fazer_compra @id_item = 4, @id_usuario = 3;
 GO
 
@@ -279,7 +269,7 @@ GO
 EXEC fazer_compra @id_item = 9, @id_usuario = 10;
 GO
 
--- TESTE PARA N√O TEM MAIS ITENS DE compra
+-- TESTE PARA N√ÉO TEM MAIS ITENS DE compra
 EXEC fazer_compra @id_item = 9, @id_usuario = 10;
 GO
 
@@ -287,7 +277,7 @@ GO
 EXEC responde @num = 1;
 GO
 
--- CÛdigo para execuÁ„o do procedure
+-- C√≥digo para execu√ß√£o do procedure
 EXEC Historico @user = 10;
 GO
 
@@ -297,8 +287,8 @@ GO
 
 /* INICIO DO DQL */
 
--- RANKING TOP 3 DAS PONTUA«’ES
-SELECT	TOP 100
+-- RANKING TOP 3 DAS PONTUA√á√ïES
+SELECT	TOP 3
 		ROW_NUMBER() OVER(ORDER BY usuario.pontuacao desc) AS 'Ranking',
 		usuario.nome AS Usuario,
 		estado.sigla AS Estado,
