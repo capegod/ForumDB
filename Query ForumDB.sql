@@ -1,14 +1,16 @@
 /* CRIAÇÃO DO BANCO + SELECIONAR PARA USO*/
 
+-- CRIAÇÃO DO BANCO
 CREATE DATABASE forumDB;
 GO
 
+-- DESIGNAÇÃO COMO BANCO ATUAL
 USE forumDB;
 GO
 
 /*INICIO DDL - CRIAÇÃO DAS TABELAS */
 
--- Tabela de estados
+-- TABELA DE ESTADOS
 CREATE TABLE Estado(
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	sigla CHAR(2),
@@ -16,7 +18,7 @@ CREATE TABLE Estado(
 );
 GO
 
--- Tabela de Usuários
+-- TABELA DE USUÁRIOS
 CREATE TABLE Usuario(
     	id INT IDENTITY(1,1) PRIMARY KEY,
 	nome VARCHAR(100) UNIQUE NOT NULL,
@@ -30,7 +32,7 @@ CREATE TABLE Usuario(
 );
 GO
 
--- Tabela de Tópicos
+-- TABELA DE TÓPICOS
 CREATE TABLE Topico(
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	titulo VARCHAR(100) NOT NULL,
@@ -41,7 +43,7 @@ CREATE TABLE Topico(
 );
 GO
 
--- Tabela de Respostas
+-- TABELA DE RESPOSTAS
 CREATE TABLE Resposta(
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	conteudo VARCHAR(5000) NOT NULL,
@@ -52,7 +54,7 @@ CREATE TABLE Resposta(
 );
 GO
 
--- Tabela da Loja
+-- TABELA DE PRODUTOS
 CREATE TABLE Produto(
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	marca varchar(25),
@@ -63,7 +65,7 @@ CREATE TABLE Produto(
 );
 GO
 
--- Tabela de recibos
+-- TABELA DE LOG DE COMPRAS
 CREATE TABLE Compra(
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	id_item INT FOREIGN KEY REFERENCES Produto(id),
@@ -75,7 +77,7 @@ GO
 
 /* CRIAÇÃO DOS GATILHOS DO BANCO */
 
--- CRIAÇÃO DE TRIGGER PARA EFETUAR compra
+-- CRIAÇÃO DE TRIGGER AO EFETUAR COMPRA
 CREATE TRIGGER efetuar_compra
 ON compra
 FOR INSERT
@@ -114,7 +116,7 @@ BEGIN
 END
 GO
 
--- Criação do trigger para atualização dos pontos 
+-- CRIAÇÃO DO TRIGGER PARA ATUALIZAÇÃO DOS PONTOS 
 CREATE TRIGGER update_pontos_topico
 ON Resposta 
 AFTER UPDATE
@@ -138,37 +140,37 @@ GO
 
 /* CRIAÇÃO DOS PROCEDURES DO BANCO */
 
--- Criação do procedure para ver histórico de compra de um usuário
--- COMANDO: EXEC Historico @user = id de um usuário
-CREATE PROCEDURE Historico @user INT
+-- CRIAÇÃO DO PROCEDURE PARA VER HISTÓRICO DE COMPRA DE UM USUÁRIO
+-- COMANDO: EXEC Historico @id_usuario = id de um usuário
+CREATE PROCEDURE Historico @id_usuario INT
 AS
 SELECT compra.id AS 'Nº pedido', Produto.nome_item AS 'Nome do item', compra.stat AS 'Status do Pedido', compra.hora AS 'Data e Hora'
 FROM compra
 INNER JOIN Produto ON compra.id_item = Produto.id
-WHERE compra.id_usuario = @user;
+WHERE compra.id_usuario = @id_usuario;
 GO
 
--- Criação do procedure para sinalizar 
--- uma resposta de um tópico como definitiva
--- COMANDO: EXEC responde @num = id de uma resposta
-CREATE PROCEDURE responde @num INT
+-- CRIAÇÃO DO PROCEDURE PARA SINALIZAR 
+-- UMA RESPOSTA DE UM TÓPICO COMO DEFINITIVA
+-- COMANDO: EXEC responde @id_resposta = id de uma resposta
+CREATE PROCEDURE responde @id_resposta INT
 AS
 UPDATE Resposta
 SET resp = 1
-WHERE id = @num;
+WHERE id = @id_resposta;
 GO
 
--- Criação do procedure para adicionar mais itens de um item já existente
--- COMANDO: EXEC adicionar_itens @cod_item = id do item, 
+-- CRIAÇÃO DO PROCEDURE PARA ADICIONAR MAIS ITENS DE UM ITEM JÁ EXISTENTE
+-- COMANDO: EXEC adicionar_itens @id_produto = id do item, 
 -- @quant = quantidade a ser adicionada
-CREATE PROCEDURE adicionar_itens @cod_item INT, @quant INT
+CREATE PROCEDURE adicionar_itens @id_produto INT, @quant INT
 AS
 UPDATE Produto
 SET quant = quant + @quant
-WHERE id = @cod_item;
+WHERE id = @id_produto;
 GO
 
--- Criação do procedure que faz as compra de um item por um usuário
+-- CRIAÇÃO DO PROCEDURE QUE FAZ AS COMPRA DE UM ITEM POR UM USUÁRIO
 -- COMANDO: EXEC fazer_compra @id_item = id do item desejado, @id_usuario = id do usuário comprador
 CREATE PROCEDURE fazer_compra @id_item INT, @id_usuario INT
 AS
@@ -179,7 +181,7 @@ GO
 
 /* INICIO DO DML COM DADOS DE AMOSTRA */
 
--- Lista de estados brasileiros
+-- LISTA DE ESTADOS BRASILEIROS
 INSERT INTO estado(sigla, nome)
 VALUES
 	('AC', 'Acre'),
@@ -260,27 +262,27 @@ GO
 
 /* INICIO DOS TESTES COM PROCEDURES */
 
--- TESTE PARA RETORNO DE NÃO TEM PONTOS compra
+-- TESTE PARA “NÃO TEM PONTOS” NA COMPRA
 EXEC fazer_compra @id_item = 4, @id_usuario = 3;
 GO
 
--- TESTE PARA SUCESSO DE compra
+-- TESTE PARA SUCESSO NA COMPRA
 EXEC fazer_compra @id_item = 9, @id_usuario = 10;
 GO
 
--- TESTE PARA NÃO TEM MAIS ITENS DE compra
+-- TESTE PARA “NÃO TEM MAIS ITENS” NA COMPRA
 EXEC fazer_compra @id_item = 9, @id_usuario = 10;
 GO
 
 -- TESTE PARA SINALIZAR RESPOSTA COMO VERDADEIRA
-EXEC responde @num = 1;
+EXEC responde @id_resposta = 1;
 GO
 
--- Código para execução do procedure
-EXEC Historico @user = 10;
+-- TESTE PARA VER HISTÓRICO DO USUÁRIO
+EXEC Historico @id_usuario = 10;
 GO
 
--- Adicionar item na loja
+-- TESTE PARA ADICIONAR ITEM NA LOJA
 EXEC adicionar_itens @cod_item = 9, @quant = 3;
 GO
 
