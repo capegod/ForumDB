@@ -30,7 +30,7 @@ CREATE TABLE usuario(
 	pontuacao INT DEFAULT 0,
 	ban_stats BIT NOT NULL DEFAULT 0,
 	ban_expira DATE NULL,
-	conta_tipo INT NOT NULL DEFAULT 0,
+	conta_tipo INT NOT NULL DEFAULT 1,
 	id_estado INT FOREIGN KEY REFERENCES estado(id)
 );
 GO
@@ -42,7 +42,8 @@ CREATE TABLE topico(
 	descricao VARCHAR(5000) NOT NULL,
 	data_criacao SMALLDATETIME DEFAULT SYSDATETIME(),
 	id_usuario INT FOREIGN KEY REFERENCES usuario(id),
-	respondido BIT NOT NULL DEFAULT 0
+	respondido BIT NOT NULL DEFAULT 0,
+	trancado BIT NOT NULL DEFAULT 0
 );
 GO
 
@@ -75,6 +76,15 @@ CREATE TABLE registro_resgate(
 	id_usuario INT FOREIGN KEY REFERENCES usuario(id),
 	hora SMALLDATETIME DEFAULT SYSDATETIME(),
 	stat VARCHAR(100)
+);
+GO
+
+CREATE TABLE reporte(
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	id_usuario_reportado INT FOREIGN KEY REFERENCES usuario(id),
+	id_topico_reportado INT FOREIGN KEY REFERENCES topico(id),
+	id_resposta_reportado INT FOREIGN KEY REFERENCES resposta(id),
+	motivo VARCHAR(1000) NOT NULL,
 );
 GO
 
@@ -138,6 +148,9 @@ BEGIN
 
 	UPDATE topico SET respondido = 1
 	WHERE id = @topico
+
+	UPDATE topico SET trancado = 1
+	WHERE id = @topico
 END
 GO
 
@@ -159,11 +172,42 @@ SET ban_stats = 0, ban_expira = NULL
 WHERE id = @id_usuario;
 GO
 
--- CRIAÇÃO DO PROCEDURE PARA VER HISTÓRICO DE RESGATE DE UM USUÁRIO
--- COMANDO: EXEC Historico @id_usuario = id de um usuário
-CREATE PROCEDURE historico @id_usuario INT
+-- CRIAÇÃO DO PROCEDURE PARA VER HISTÓRICO DE TOPICOS DE UM USUÁRIO
+-- COMANDO: EXEC historico_topicos @id_usuario = id de um usuario
+CREATE PROCEDURE historico_topicos @id_usuario INT
 AS
-SELECT registro_resgate.id AS 'Nº pedido', produto.nome_item AS 'Nome do item', registro_resgate.stat AS 'Status do Pedido', registro_resgate.hora AS 'Data e Hora'
+SELECT usuario.nome AS 'nome do usuario',
+	topico.id AS 'id do topico',
+	topico.titulo AS 'título do tópico'
+FROM usuario
+INNER JOIN topico ON usuario.id = topico.id_usuario
+WHERE usuario.id = @id_usuario; 
+GO
+
+-- CRIAÇÃO DO PROCEDURE PARA VER HISTORICO DE RESPOSTAS DE UM USUARIO
+-- COMANDO: EXEC historico_respostas @id_usuario = id de um usuario
+CREATE PROCEDURE historico_respostas @id_usuario INT
+AS
+SELECT usuario.nome AS 'nome do usuario',
+	resposta.id AS 'id da reposta',
+	resposta.conteudo AS 'conteudo da resposta',
+	resposta.id_topico AS 'id do tópico',
+	topico.titulo AS 'titulo do tópico',
+	resposta.responde AS 'resposta do tópico'
+FROM usuario
+INNER JOIN resposta ON usuario.id = resposta.id_usuario
+INNER JOIN topico ON resposta.id_topico = topico.id
+WHERE usuario.id = @id_usuario; 
+GO	
+
+-- CRIAÇÃO DO PROCEDURE PARA VER HISTÓRICO DE RESGATE DE UM USUÁRIO
+-- COMANDO: EXEC historico_resgate @id_usuario = id de um usuário
+CREATE PROCEDURE historico_resgate @id_usuario INT
+AS
+SELECT registro_resgate.id AS 'Nº pedido',
+	produto.nome_item AS 'Nome do item',
+	registro_resgate.stat AS 'Status do Pedido',
+	registro_resgate.hora AS 'Data e Hora'
 FROM registro_resgate
 INNER JOIN produto ON registro_resgate.id_item = produto.id
 WHERE registro_resgate.id_usuario = @id_usuario;
@@ -248,13 +292,16 @@ GO
 -- AMOSTRA DE TÓPICO
 INSERT INTO topico(titulo, descricao, id_usuario)
 VALUES
-	('Dúvida sobre regra de três simples', 'Como faço para resolver uma regra de três simples?', 3);
+	('Dúvida sobre regra de três simples', 'Como faço para resolver uma regra de três simples?', 3),
+	('Qual o melhor jogo de 2024?', 'Estou em dúvida entre dois lançamentos recentes. Alguém poderia me ajudar a escolher?', 4),
+	('Baixe livros didáticos gratuitamente!', 'enho um link para baixar materiais completos sem custo. É só acessar aqui!', 4);
 GO
 
 -- AMOSTRA DE RESPOSTA
 INSERT INTO resposta(conteudo, id_usuario, id_topico)
 VALUES
-	('Basta multiplicar os valores em cruz e depois dividir pelo que sobrar!', 7, 1);
+	('Basta multiplicar os valores em cruz e depois dividir pelo que sobrar!', 7, 1),
+	('Você só pode ser muito burro para não entender algo tão simples! Nem deveria estar aqui se não consegue acompanhar o assunto.', 4, 1);
 GO
 
 -- AMOSTRA DE ITENS NA LOJA
@@ -279,6 +326,15 @@ VALUES
 	('Bruno', '2002-06-08', 'Bruno@gmail.com', '$2a$12$jS3yud30wFOw406zOnvpKO82m4Z2tCLXbaXsHB0YbY/DTUpvkg.Zi', 10, 10, 3);
 GO
 
+INSERT INTO reporte(id_usuario_reportado, id_topico_reportado, id_resposta_reportado, motivo)
+VALUES
+	(1, NULL, NULL, 'O usuário está postando links de propagandas repetidamente em várias threads.'),
+	(NULL, NULL, 2, 'Esta mensagem contém linguagem agressiva e insultos direcionados a outros membros.'),
+	(NULL, 1, NULL, 'Este post não tem relação com o assunto do fórum e está desviando a discussão.'),
+	(4, NULL, NULL, 'O usuário está enviando várias mensagens seguidas sem propósito claro, atrapalhando a leitura.'),
+	(NULL, 2, NULL, 'O conteúdo deste post quebra as regras do fórum ao divulgar material pirata.');
+	GO
+
 /* INICIO DOS TESTES COM PROCEDURES */
 
 -- TESTE PARA “NÃO TEM PONTOS” PARA RESGATE
@@ -297,20 +353,30 @@ GO
 EXEC responde @id_resposta = 1;
 GO
 
--- TESTE PARA VER HISTÓRICO DO USUÁRIO
-EXEC historico @id_usuario = 10;
+-- TESTE PARA VER HISTÓRICO DE RESGATES USUÁRIO
+EXEC historico_resgate @id_usuario = 3;
+GO
+
+EXEC historico_resgate @id_usuario = 10;
 GO
 
 -- TESTE PARA ADICIONAR MAIS PRODUTOS NA LOJA
 EXEC adicionar_itens @id_produto = 9, @quant = 3;
 GO
 
+-- TESTE PARA VER HISTÓRICO DE TOPICOS DE UM USUÁRIO
+EXEC historico_topicos @id_usuario = 4;
+GO
+
+-- TESTE PARA VER HISTÓRICO DE RESPOSTAS DE UM USUÁRIO
+EXEC historico_respostas @id_usuario = 4;
+
 -- TESTE PARA BANIR UM USUÁRIO
-EXEC ban @id_usuario = 1, @ban_ate = '2025-12-08';
+EXEC ban @id_usuario = 4, @ban_ate = '2025-12-08';
 GO
 
 -- TESTE PARA REMOVER O BAN DE UM USUARIO
-EXEC remover_ban @id_usuario = 1;
+EXEC remover_ban @id_usuario = 4;
 GO
 
 /* INICIO DO DQL */
@@ -337,3 +403,5 @@ SELECT * FROM estado;
 SELECT * FROM produto;
 
 SELECT * FROM registro_resgate;
+
+SELECT * FROM reporte;
