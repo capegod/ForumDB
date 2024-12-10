@@ -327,6 +327,7 @@ VALUES
 	('Bruno', '2002-06-08', 'Bruno@gmail.com', '$2a$12$jS3yud30wFOw406zOnvpKO82m4Z2tCLXbaXsHB0YbY/DTUpvkg.Zi', 10, 10, 3);
 GO
 
+-- AMOSTRA DE REPORTES
 INSERT INTO reporte(id_usuario_reportado, id_topico_reportado, id_resposta_reportado, motivo)
 VALUES
 	(1, NULL, NULL, 'O usuário está postando links de propagandas repetidamente em várias threads.'),
